@@ -91,7 +91,8 @@ def eyes_mouth_detection(ear, _mouth_ear, frame, _count, yawns, prev_yawn_status
 # 检测入口
 def driver_fatigue_detection():
     # 加载摄像头，0表示使用默认摄像头，直接写视频路径表示读取该视频
-    camera = cv2.VideoCapture("video.mp4")
+    #camera = cv2.VideoCapture("video.mp4")
+    camera = cv2.VideoCapture(0)
     # 这里直接使用dlib库训练好的人脸68点位特征模型
     predictor_path = "shape_predictor_68_face_landmarks.dat"
 

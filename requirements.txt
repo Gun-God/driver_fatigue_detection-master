@@ -1,0 +1,6 @@
+dlib
+imutils
+numpy
+opencv_python
+Pillow
+scipy
