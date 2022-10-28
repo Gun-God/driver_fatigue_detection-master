@@ -173,6 +173,5 @@ def driver_fatigue_detection():
     # 释放相机流
     camera.release()
 
-
 if __name__ == '__main__':
     driver_fatigue_detection()
