@@ -10,14 +10,15 @@ import dlib
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-
+import time
 # 定义眼睛的比的阈值
 EYE_AR_THRESH = 0.25
 # 定义眼睛闪烁阈值，连续闭眼次数
 EYE_AR_CONS_FRAMES = 40
 # 定义嘴巴的纵横比的阈值
 MOU_AR_THRESH = 0.85
-
+# 定义闭眼时间
+EYE_CL_TIME=2000
 
 # 计算垂直眼睛界标之间的距离与水平眼睛界标之间的距离之比
 def eye_aspect_ratio(eye):
@@ -62,16 +63,26 @@ def cv2_add_chinese_text(img, text, position, _text_color=(0, 255, 0), _text_siz
 
 
 # 判断眼睛，嘴巴
-def eyes_mouth_detection(ear, _mouth_ear, frame, _count, yawns, prev_yawn_status):
+def eyes_mouth_detection(ear, _mouth_ear, frame, _count, yawns, prev_yawn_status,EYE_STATUS,t1):
     # 通过检查眼睛的纵横比，如果眼睛纵横比小于阈值，则为闭眼
+    t2 = 0
     if ear < EYE_AR_THRESH:
+        if  EYE_STATUS:
+            t1=int(round(time.time() * 1000))
+        EYE_STATUS = False
+        if t1 != 0:
+            t2 = int(round(time.time() * 1000))
+            print("闭眼时长", int(t2 - t1))
+        if (t2 - t1) > EYE_CL_TIME:
+            frame = cv2_add_chinese_text(frame, "检测到长时间闭眼！", (120, 5), (255, 0, 0))
         _count += 1
         frame = cv2_add_chinese_text(frame, "闭眼!", (10, 5), (255, 0, 0))
         # 如果闭眼次数大于阈值
         if _count >= EYE_AR_CONS_FRAMES:
-            frame = cv2_add_chinese_text(frame, "检测到有睡意，请勿疲劳驾驶！", (120, 5), (255, 0, 0))
+            frame = cv2_add_chinese_text(frame, "检测到有睡意，醒醒！", (120, 35), (255, 0, 0))
     # 否则为睁眼
     else:
+        EYE_STATUS = True
         _count = 0
         frame = cv2_add_chinese_text(frame, "睁眼", (10, 5), (0, 255, 0))
 
@@ -85,14 +96,16 @@ def eyes_mouth_detection(ear, _mouth_ear, frame, _count, yawns, prev_yawn_status
         _yawn_status = False
     if prev_yawn_status == True and _yawn_status == False:
         yawns += 1
-    return frame, _count, yawns, _yawn_status
+    return frame, _count, yawns, _yawn_status,EYE_STATUS,t1
 
 
 # 检测入口
 def driver_fatigue_detection():
+    EYE_STATUS = True
+    t1=0
     # 加载摄像头，0表示使用默认摄像头，直接写视频路径表示读取该视频
-    #camera = cv2.VideoCapture("video.mp4")
-    camera = cv2.VideoCapture(0)
+    camera = cv2.VideoCapture("vi.mp4")
+    #camera = cv2.VideoCapture(0)
     # 这里直接使用dlib库训练好的人脸68点位特征模型
     predictor_path = "shape_predictor_68_face_landmarks.dat"
 
@@ -160,8 +173,8 @@ def driver_fatigue_detection():
             frame = cv2_add_chinese_text(frame, "(嘴巴)MAR: {:.2f}".format(_MOUTH_EAR), (550, 45), (255, 0, 0))
 
             # 调用方法进行对比纵横比
-            frame, COUNTER, yawns, _yawn_status = eyes_mouth_detection(_EYE_EAR, _MOUTH_EAR, frame, COUNTER, yawns,
-                                                                       prev_yawn_status)
+            frame, COUNTER, yawns, _yawn_status,EYE_STATUS,t1 = eyes_mouth_detection(_EYE_EAR, _MOUTH_EAR, frame, COUNTER, yawns,
+                                                                       prev_yawn_status,EYE_STATUS,t1)
 
         # 显示视频
         cv2.imshow("video", frame)
